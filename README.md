@@ -1,4 +1,4 @@
-### Hi there 👋
+Preparing new milter-regex 3.0 👋
 
 <!--
 **milter-regex/milter-regex** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
