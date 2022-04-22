@@ -28,6 +28,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
+ * ChangeLog:
+ * 2022/04/17  Add function prototype of geoip.c
  */
 
 #ifndef _EVAL_H_
@@ -36,7 +38,7 @@
 #include <regex.h>
 
 enum { VAL_UNDEF=0, VAL_TRUE, VAL_FALSE };
-enum { COND_MACRO, COND_CONNECT, COND_HELO, COND_ENVFROM, COND_ENVRCPT,
+enum { COND_MACRO, COND_CONNECT, COND_COUNTRY, COND_HELO, COND_ENVFROM, COND_ENVRCPT,
     COND_HEADER, COND_BODY, COND_MAX };
 enum { EXPR_AND, EXPR_OR, EXPR_NOT, EXPR_COND };
 enum { ACTION_REJECT, ACTION_TEMPFAIL, ACTION_QUARANTINE,
@@ -106,5 +108,18 @@ struct action	*eval_cond(struct ruleset *, int *, int,
 struct action	*eval_end(struct ruleset *, int *, int, int);
 void		 eval_clear(struct ruleset *, int *, int);
 void		 free_ruleset(struct ruleset *);
+
+/* Function prototype of geoip.c */
+
+extern  void init_geoip( ) ;
+extern  int  get_CountryCode( const char *, char[3] ) ;   /* Return country code into 2nd. param. */
+extern  int  check_geoipEnabled( ) ;                      /* 0: Enabled / 1: Disabled */
+
+extern  void reset_geoip( ) ;
+extern  void set_ipv4file( const char * ) ;
+extern  void set_ipv6file( const char * ) ;
+extern  void set_geoipCashMax( const char * ) ;
+extern  void set_geoipCashKeep( const char * ) ;
+extern  void set_geoipDebugLog( const char * ) ;
 
 #endif

@@ -9,10 +9,10 @@
 CFLAGS=		-g
 LDFLAGS=	-L/usr/lib/libmilter -lmilter -lpthread
 
-all: milter-regex milter-regex.cat8
+all: milter-regex milter-regex.cat8 milter-regex-ip-prep
 
-milter-regex: milter-regex.o eval.o strlcat.o strlcpy.o y.tab.o
-	gcc -o milter-regex milter-regex.o eval.o strlcat.o strlcpy.o y.tab.o $(LDFLAGS)
+milter-regex: milter-regex.o eval.o strlcat.o strlcpy.o y.tab.o geoip.o
+	gcc -o milter-regex milter-regex.o eval.o strlcat.o strlcpy.o y.tab.o geoip.o $(LDFLAGS)
 
 milter-regex.o: milter-regex.c eval.h
 	gcc $(CFLAGS) -c milter-regex.c
@@ -32,8 +32,14 @@ y.tab.o: y.tab.c
 y.tab.c: parse.y
 	yacc -d parse.y
 
+geoip.o: geoip.c
+	gcc $(CFLAGS) -c geoip.c
+
 milter-regex.cat8: milter-regex.8
 	nroff -Tascii -mandoc milter-regex.8 > milter-regex.cat8
 
+milter-regex-ip-prep: milter-regex-ip-prep.c
+	gcc $(CFLAGS) -o milter-regex-ip-prep milter-regex-ip-prep.c
+
 clean:
-	rm -f *.core milter-regex y.tab.* *.o *.cat8
+	rm -f *.core milter-regex y.tab.* *.o *.cat8 milter-regex-ip-prep

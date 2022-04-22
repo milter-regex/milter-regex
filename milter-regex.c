@@ -28,9 +28,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
+ * ChangeLog:
+ * 2022/04/17  Add GeoIP in get_ruleset, main and cb_helo
  */
 
-static const char rcsid[] = "$Id: milter-regex.c,v 1.22 2019/12/12 14:43:01 dhartmei Exp $";
+static const char rcsid[] = "milter-regex 3.0   2022/04/23";
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -297,14 +299,25 @@ get_ruleset(void)
 		if (i == MAXRS)
 			msg(LOG_ERR, NULL, "all rulesets are in use, cannot "
 			    "load new one", MAXRS);
-		else if (parse_ruleset(rule_file_name, &rs[i], err,
-		    sizeof(err)) || rs[i] == NULL)
-			msg(LOG_ERR, NULL, "parse_ruleset: %s", err);
 		else {
-			msg(LOG_INFO, NULL, "configuration file %s loaded "
-			    "successfully", rule_file_name);
-			cur = i;
+
+			/* Reset GeoIP */
+			reset_geoip( ) ;
+
+			if (parse_ruleset(rule_file_name, &rs[i], err,
+			    sizeof(err)) || rs[i] == NULL) {
+				msg(LOG_ERR, NULL, "parse_ruleset: %s", err);
+			} else {
+				msg(LOG_INFO, NULL, "configuration file %s loaded "
+				    "successfully", rule_file_name);
+				cur = i;
+			}
 		}
+
+		/* GeoIP status */
+		msg(LOG_INFO, NULL, "GeoIP is %s.",
+			check_geoipEnabled() == 0 ? "enabled" : "disabled" ) ;
+
 	}
 	mutex_unlock();
 	return (rs[cur]);
@@ -401,6 +414,7 @@ cb_helo(SMFICTX *ctx, char *arg)
 {
 	struct context *context;
 	const struct action *action;
+	char sCountryCodeResult[3] ;
 
 	if ((context = (struct context *)smfi_getpriv(ctx)) == NULL) {
 		msg(LOG_ERR, NULL, "cb_helo: smfi_getpriv");
@@ -419,6 +433,21 @@ cb_helo(SMFICTX *ctx, char *arg)
 	    COND_MACRO)) !=
 	    NULL)
 		return (setreply(ctx, context, action));
+
+	/* Check GeoIP */
+	if ( check_geoipEnabled() == 0 ) {
+		eval_clear(context->rs, context->res, COND_COUNTRY);
+		get_CountryCode( context->host_addr, sCountryCodeResult ) ;
+		if ((action = eval_cond(context->rs, context->res, COND_COUNTRY,
+		    sCountryCodeResult, NULL)) != NULL) {
+			return (setreply(ctx, context, action));
+		}
+		if ((action = eval_end(context->rs, context->res, COND_COUNTRY,
+		    COND_MACRO)) != NULL) {
+			return (setreply(ctx, context, action));
+		}
+	}
+
 	if ((action = check_macros(ctx, context, "helo")) != NULL)
 		return (setreply(ctx, context, action));
 	eval_clear(context->rs, context->res, COND_HELO);
@@ -861,6 +890,9 @@ main(int argc, char **argv)
 		fprintf(stderr, "eval_init: failed\n");
 		goto done;
 	}
+
+	/* Initialize GeoIP */
+	init_geoip( ) ;
 
 	/* daemonize (detach from controlling terminal) */
 	if (!debug && daemon(0, 0)) {

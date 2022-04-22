@@ -181,6 +181,11 @@ address (which
 performs independantly of the milter plugin).
 When resolution fails, the hostname contains the numerical
 address in square brackets.
+.It country <code>
+The sender's country code is get from the sender's IP address by
+looking at the RIR's address allocation lists.
+.br
+The sender's country code is checked matching with the specified country code.
 .It helo <name>
 Reject the connection if the sender supplied HELO name matches
 the specified regular expression.
@@ -213,6 +218,54 @@ configuration file, by failing open, accepting all messages.
 When the plugin is not running,
 .Xr sendmail 8
 will accept all messages.
+.Pp
+To use the keyword 'country', prepare IP address allocation lists,
+and a few settings must be specified.
+.br
+Specifying both ipv4file and ipv6file enables GeoIP.
+.Bd -literal
+The RIR's address allocation list is available as follows;
+ftp://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-latest
+ftp://ftp.apnic.net/pub/stats/apnic/delegated-apnic-latest
+ftp://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
+ftp://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-latest
+ftp://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-latest
+.Ed
+.Pp
+Before use the lists, the files must be converted from ASCII format
+to binary format using the milter-regex-ip-prep standalone utility
+included in the milter-regex package.
+.br
+cat delegated-*-latest | grep '|..|ipv[46]|' | sort -t '|' -k 3,4 | /install-path/milter-regex-ip-prep ipv4.dat ipv6.dat
+.Bl -tag -width "xxxx"
+.It ipv4file <file>
+Specify the file path of the IPv4 address allocation list.
+.br
+Maximum path length is 1023 characters.
+.It ipv6file <file>
+Specify the file path of the IPv6 address allocation list.
+.br
+Maximum path length is 1023 characters.
+.It geoipCashMax <memory>
+Maximum size of GEOIP cash memory. Minimum size is 100K.
+.br
+K and M can be specified as the unit.
+.br
+Default: 100K
+.It geoipCashKeep <period>
+Validity of GEOIP cash memory.
+.br
+H for hours and D for days can be specified as the unit.
+.br
+Default: 7D
+.It geoipDebugLog <level>
+For development purpose, this keyword can force syslog level LOG_DEBUG to LOG_INFO.
+Only enable syslog output in GEOIP source code, not whole milter-regex.
+.br
+Values:  DEBUG | INFO
+.br
+Default: DEBUG
+.El
 .Pp
 .Sh REGULAR EXPRESSIONS
 The regular expressions used in the configuration rules are
@@ -324,6 +377,9 @@ macro /tls_version/ /TLSv/
 tempfail "Sender IP address not resolving"
 connect /\\[.*\\]/ //
 
+reject "Email is not sent from the country"
+country /(XX|XY|XZ)/e and envfrom /[.@]example\\.com>$/
+
 reject "Malformed HELO (not a domain, no dot)"
 helo /\\./n
 
@@ -385,7 +441,11 @@ flags		= [ 'e' ] [ 'i' ] [ 'n' ]
 macro		= name '=' expr
 .Ed
 .Sh FILES
+.Bd -literal
 /etc/milter-regex.conf
+IPv4 allocation data file specified by the keyword 'ipv4file'
+IPv6 allocation data file specified by the keyword 'ipv6file'
+.Ed
 .Sh SEE ALSO
 .Xr mailstats 1 ,
 .Xr regex 3 ,
@@ -406,6 +466,7 @@ macro		= name '=' expr
 The first version of
 .Nm
 was written in 2003.
+.br
 Boolean expression evaluation was added in 2004.
 .Sh AUTHORS
 Daniel Hartmeier

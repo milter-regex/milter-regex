@@ -10,7 +10,9 @@ LDADD+=		-lmilter -lpthread -g
 
 install:
 	sudo rm -rf /usr/local/libexec/milter-regex
+	sudo rm -rf /usr/local/libexec/milter-regex-ip-prep
 	sudo cp ./milter-regex /usr/local/libexec/
+	sudo cp ./milter-regex-ip-prep /usr/local/libexec/
 	sudo pkill milter-regex || echo not running
 	sleep 5
 	sudo /usr/local/libexec/milter-regex

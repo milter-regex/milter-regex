@@ -28,6 +28,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
+ * ChangeLog:
+ * 2022/04/17  Add 6 GEOIP keywords
+ *             connect, geoipCashKeep, geoipCashMax, geoipDebugLog, ipv4file, ipv6file
  */
 
 %{
@@ -76,7 +79,7 @@ typedef struct {
 
 %token	ERROR STRING
 %token	ACCEPT REJECT TEMPFAIL DISCARD QUARANTINE
-%token	CONNECT HELO ENVFROM ENVRCPT HEADER MACRO BODY
+%token	CONNECT COUNTRY HELO ENVFROM ENVRCPT HEADER MACRO BODY IPV4FILE IPV6FILE GEOIPCASHKEEP GEOIPCASHMAX GEOIPDEBUGLOG
 %token	AND OR NOT
 %type	<v.string>	STRING
 %type	<v.expr>	expr term
@@ -87,6 +90,7 @@ typedef struct {
 file	: /* empty */
 	| macro file		{ }
 	| rule file		{ }
+	| settings file		{ }
 	;
 
 rule	: action expr_l		{
@@ -200,6 +204,12 @@ term	: CONNECT STRING STRING	{
 		free($2);
 		free($3);
 	}
+	| COUNTRY STRING		{
+		$$ = create_cond(rs, COND_COUNTRY, $2, NULL);
+		if ($$ == NULL)
+			YYERROR;
+		free($2);
+	}
 	| HELO STRING		{
 		$$ = create_cond(rs, COND_HELO, $2, NULL);
 		if ($$ == NULL)
@@ -251,6 +261,29 @@ term	: CONNECT STRING STRING	{
 	}
 	;
 
+settings	: 
+	  IPV4FILE STRING		{
+		set_ipv4file( $2 ) ;
+		free($2);
+	}
+	| IPV6FILE STRING		{
+		set_ipv6file( $2 ) ;
+		free($2);
+	}
+	| GEOIPCASHKEEP STRING		{
+		set_geoipCashKeep( $2 ) ;
+		free($2);
+	}
+	| GEOIPCASHMAX STRING		{
+		set_geoipCashMax( $2 ) ;
+		free($2);
+	}
+	| GEOIPDEBUGLOG STRING		{
+		set_geoipDebugLog( $2 ) ;
+		free($2);
+	}
+	;
+
 %%
 
 int
@@ -289,11 +322,17 @@ lookup(char *s)
 		{ "and",	AND },
 		{ "body",	BODY },
 		{ "connect",	CONNECT },
+		{ "country",	COUNTRY },
 		{ "discard",	DISCARD },
 		{ "envfrom",	ENVFROM },
 		{ "envrcpt",	ENVRCPT },
+		{ "geoipCashKeep",	GEOIPCASHKEEP },
+		{ "geoipCashMax",	GEOIPCASHMAX },
+		{ "geoipDebugLog",	GEOIPDEBUGLOG },
 		{ "header",	HEADER },
 		{ "helo",	HELO },
+		{ "ipv4file", IPV4FILE },
+		{ "ipv6file", IPV6FILE },
 		{ "macro",	MACRO },
 		{ "not",	NOT },
 		{ "or",		OR },
