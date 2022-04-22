@@ -1,0 +1,103 @@
+# /etc/milter-regex.conf
+
+accept
+connect // /127.0.0.1/
+
+# whitelist some criteria first
+accept
+helo /whitelist/
+helo /WORLD/
+connect /gprs-gateway/ /193.247.250.1/
+envfrom /ebay\.com/i
+envfrom /hushgames\.com/i
+envfrom /amazon\.com/i
+envfrom /yoyofactory/i
+envfrom /travel\.ch/i
+envfrom /keyserver-beta.pgp.com/i
+envfrom /yahoo.com/i
+envfrom /ac.uk/i
+envfrom /sgi.org.uk/i
+header /From/ /Mathieu Sauve-Frankel/
+header /From/ /ebay\.com/i
+header /From/ /sabresfc11@aol\.com/i
+header /From/ /ictp\.ch/i
+header /From/ /tera-byte/i
+header /From/ /google\.com/i
+header /Subject/ /item/i
+header /Subject/ /dorabella/i
+header /Subject/ /elgar/i
+header /Subject/ /malvern/i
+
+# annoying bounces
+discard
+header /^From$/ /^Mail Delivery System <Mailer-Daemon@aftermath.mail.pas.earthlink.net>$/
+
+reject "You fucked up, go away."
+header /^From$/ /jobsuchmaschine\.ch/
+
+#tempfail "Sender IP address not resolving"
+#connect /\[.*\..*\]/ //
+
+reject "Malformed HELO (not a domain, no dot)"
+helo /\./n
+
+reject "Spoofed HELO (my own IP address, nice try)"
+helo /62\.65\.145\.30/
+helo /127\.0\.0\.1/
+
+# This is rather pointless, some receivers do callback checks using <>
+# and refuse service if you're not accepting <> (which is RFC compliant
+# for bounces). And sendmail itself will enforce legitimate format for
+# non-empty forms (enforcing a @, checking the domain, etc.).
+#reject "Malformed MAIL FROM (not an email address or <>)"
+#envfrom /(<>|<.*@.*>)/en
+
+reject "Malformed RCPT TO (not an email address, not <.*@.*>)"
+envrcpt /<(.*@.*|Postmaster)>/ein
+
+reject "HTML mail not accepted"
+( header ,^Content-Type$,i ,^text/html,i or \
+body ,^Content-Type: text/html,i ) and not \
+header ,^From$, ,deraadt,
+
+reject "Swen worm (caps)"
+header /^(TO|FROM|SUBJECT)$/e // and \
+    not header /^From$/i /telus.blackberry.net/
+
+#reject "Swen worm (boundary)"
+#header /^Content-Type$/i /boundary="Boundary_(ID_/i
+#header /^Content-Type$/i /boundary="[a-z]*"/
+
+reject "Swen worm (body)"
+body ,^Content-Type: audio/x-wav; name="[a-z]*\.[a-z]*",i
+body ,^Content-Type: application/x-msdownload; name="[a-z]*\.[a-z]*",i
+
+reject "Unwanted (executable) attachment type"
+header ,^Content-Type$, ,multipart/mixed, and \
+	body ,^Content-Type: application/, and \
+	body ,name=".*\.(pif|exe|scr|com|bat|rar)"$,e
+
+reject "Opt-out 'mailing list', spam, get lost (otcjournal)"
+header /^X-List-Host$/ /otcjournal/i
+header /^List-Owner$/ /smallcapnetwork/i
+
+reject "sonicsurf.ch spam, get lost"
+header /^Received$/ /\[195\.129\.5[89]\..*\]/
+
+reject "Eat your socks, you fscking spammer."
+body /^The New Media Publishers AG/i
+body /^New.*Media.*Publisher/i
+body /^Socks and more AG/i
+body /^Business Corp\. for W\.& L\. AG/i
+body /Horizon *Business *Corp/
+body /Postfach, 6062 Wilen/i
+body /041.*661.*17.*(18|19|20)/e
+body /043.*317.*02.*8[0-9]/
+body /0_4_1_/
+body /W_i_l_e_n/i
+body ,^Ort/Datum:.*____,
+
+# generic spammers
+reject "Spammer"
+header /^From$/i /link-builder\.com/i
+

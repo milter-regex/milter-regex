@@ -1,0 +1,115 @@
+#!/bin/sh
+# $Id: milter-regex.init,v 1.1.1.1 2007/01/11 15:49:52 dhartmei Exp $
+#  init file for milter-regex
+#  modified by Jim Klimov from init file for milter-greylist, (C) Mar 2005
+#
+# chkconfig: - 50 50
+# description: Milter Regex Daemon
+#
+# processname: /usr/bin/milter-regex
+# config: /etc/mail/milter-regex.conf
+# pidfile: /var/milter-regex/milter-regex.pid
+
+# source function library
+. /etc/init.d/functions
+
+configfile="/etc/mail/milter-regex.conf"
+basedir="/var/milter-regex"
+# pidfile="$basedir/milter-regex.pid"
+socket="$basedir/milter-regex.sock"
+user="mailregx"
+OPTIONS="-c $configfile -u $user -p $socket"
+
+# Enable testing only for users specified in config file
+# OPTIONS="-T $OPTIONS"
+
+# No idea what we could put here... paths like above? ;)
+if [ -f /etc/sysconfig/milter-regex ]
+then
+    . /etc/sysconfig/milter-regex
+fi
+RETVAL=0
+prog="Milter-Regex"
+
+start() {
+        echo -n $"Starting $prog: "
+        if [ $UID -ne 0 ]; then
+                RETVAL=1
+                failure
+        else
+		if [ x"$basedir" != x -a x"$basedir" != x/ ]; then
+		    if [ ! -d "$basedir" ]; then
+			echo -n "mkdir '$basedir': "
+			mkdir -p "$basedir"
+			chown "$user" "$basedir"
+			chgrp "$user" "$basedir"
+		    fi
+		fi
+
+		if status milter-regex > /dev/null; then
+		    echo -n "Already running!"
+		    RETVAL=0
+		    failure
+		else
+		    if [ -S "$socket" ]; then
+			echo -n "clean stale socket: "
+		        rm -f "$socket"
+		    fi
+
+            	    daemon /usr/bin/milter-regex $OPTIONS
+            	    RETVAL=$?
+            	    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/milter-regex
+		fi
+        fi;
+        echo 
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Stopping $prog: "
+        if [ $UID -ne 0 ]; then
+                RETVAL=1
+                failure
+        else
+                killproc /usr/bin/milter-regex
+                RETVAL=$?
+                [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/milter-regex
+        fi;
+        echo
+        return $RETVAL
+}
+
+
+restart(){
+	stop
+	start
+}
+
+condrestart(){
+    [ -e /var/lock/subsys/milter-regex ] && restart
+    return 0
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart)
+	restart
+        ;;
+  condrestart)
+	condrestart
+	;;
+  status)
+        status milter-regex
+	RETVAL=$?
+        ;;
+  *)
+	echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+	RETVAL=1
+esac
+
+exit $RETVAL
