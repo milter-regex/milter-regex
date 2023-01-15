@@ -1,0 +1,82 @@
+3.1: January 15th, 2023
+Output country code to log messages
+
+3.0: April 23rd, 2022
+Takao Abe added GeoIP filtering criteria, you can find his version on github.com/milter-regex.
+
+2.7: December 12th, 2019
+Add -t option to test the configuration file and exit with a status, suggested by Ralph Seichter.
+
+2.6: April 26th, 2019
+Treat socket file name without prefix like local file, from Takao Abe. Make pid file writable
+only by root, from Ralph Seichter.
+
+2.5: April 18th, 2019
+Add -r option to write pid file. Based on FreeBSD port patches.
+
+2.4: March 2nd, 2019
+Add -f option to set syslog facility. Patch from Takao Abe.
+
+2.3: January 28th, 2019
+Bug fix: for actions followed by multiple expressions (not just one arbitrarily complex expression),
+when multiple expressions become defined during the same sequence point, but with different values
+(e.g. one true, another false), depending on the expression order, the action might not be taken,
+ when it should be.
+This affects all prior versions since 1.0. As a workaround, use only a single expression per action
+(duplicating action lines where needed), or combine multiple expressions to a single expression
+per action using 'or'.
+Report and testing by JCA.
+
+2.2: September 25, 2018
+Add -U, -G, and -P options to set pipe user, group, and permissions. Suggested and tested by Ralph Seichter.
+
+2.1: September 26, 2017
+Default maximum log level to 6 (LOG_INFO), i.e. exclude LOG_DEBUG.
+
+2.0: November 25, 2013
+Add -l option to specify maximum log level.
+
+1.9: November 21, 2011
+Add -j option to chroot. Improve building on various platforms. Fix some typos in documentation
+ and example config.
+
+1.8: August 12, 2010
+Log symbolic host name together with numeric IP address.
+
+1.7: August 4, 2007
+Support filtering sendmail macros, like {auth_type}.
+
+1.6: June 6, 2005
+Support sendmail quarantine action. Requires non-ancient sendmail (>= 8.13) and libmilter,
+as shipping with recent *BSD releases by default.
+More fixes for the state machine, dealing with multi-message connections.
+
+1.5: March 19, 2004
+Fix logic errors in dealing with multi-message connections (SMTP RSET, HELO or MAIL FROM resetting
+SMTP state). Add cb_abort callback.
+
+1.4: March 13, 2004
+Some performance improvements, abort rule evaluation immediately when no further rules can possibly match.
+ Compile without -Werror, as some ports generate warnings.
+
+1.3: March 8, 2004
+Two bugfixes related to RCPT TO: rule evaluation (DSN options and multiple receipients would match
+incorrectly), umask(0177) for pipe, fix for Solaris daemon() implementation. Improved logging
+(From:, To: and Subject: headers, when available).
+
+1.2: February 27, 2004
+Some logging improvements and small fixes. Adds Makefiles for GNU/Linux and Solaris.
+Thanks to everyone who helped me solve the build problems.
+
+1.1: February 25, 2004
+Support macro definition/expansion.
+
+1.0: February 24, 2004
+Now supports boolean expressions, so multiple regular expressions can be combined using
+and, or, not and parentheses.
+Note that the new parser now requires quotes around reject/tempfail messages.
+If you get syntax errors in your existing configuration file, lacking quotes are a likely cause.
+Otherwise rulesets are backwards compatible with pre-1.0 versions.
+
+0.1: September 24, 2003
+First version.

@@ -1,4 +1,9 @@
-milter-regex 3.0   April 23th, 2022  
+The latest version:
+milter-regex 3.1   January 15th, 2023
+
+- - -
+
+milter-regex 3.0   April 23rd, 2022  
 
 New feature: GeoIP  
 

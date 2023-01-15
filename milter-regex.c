@@ -30,9 +30,10 @@
  *
  * ChangeLog:
  * 2022/04/17  Add GeoIP in get_ruleset, main and cb_helo
+ * 2023/01/07  Output country code to log messages
  */
 
-static const char rcsid[] = "milter-regex 3.0   2022/04/23";
+static const char rcsid[] = "milter-regex 3.1   2023/01/15";
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -74,6 +75,7 @@ struct context {
 	unsigned	 pos;		/* write position within buf */
 	char		 host_name[128];
 	char		 host_addr[64];
+	char		 host_geoip[3];	/* Country code */
 	char		 helo[128];
 	char		 env_from[128];
 	char		 env_rcpt[2048];
@@ -414,7 +416,6 @@ cb_helo(SMFICTX *ctx, char *arg)
 {
 	struct context *context;
 	const struct action *action;
-	char sCountryCodeResult[3] ;
 
 	if ((context = (struct context *)smfi_getpriv(ctx)) == NULL) {
 		msg(LOG_ERR, NULL, "cb_helo: smfi_getpriv");
@@ -437,9 +438,9 @@ cb_helo(SMFICTX *ctx, char *arg)
 	/* Check GeoIP */
 	if ( check_geoipEnabled() == 0 ) {
 		eval_clear(context->rs, context->res, COND_COUNTRY);
-		get_CountryCode( context->host_addr, sCountryCodeResult ) ;
+		get_CountryCode( context->host_addr, context->host_geoip ) ;
 		if ((action = eval_cond(context->rs, context->res, COND_COUNTRY,
-		    sCountryCodeResult, NULL)) != NULL) {
+		    context->host_geoip, NULL)) != NULL) {
 			return (setreply(ctx, context, action));
 		}
 		if ((action = eval_end(context->rs, context->res, COND_COUNTRY,
@@ -677,16 +678,25 @@ msg(int priority, struct context *context, const char *fmt, ...)
 	char msg[8192];
 
 	va_start(ap, fmt);
-	if (context != NULL)
-		snprintf(msg, sizeof(msg), "%s [%s]: ", context->host_name,
-		    context->host_addr);
-	else
+
+	if (context != NULL) {
+		if ( check_geoipEnabled() == 0 ) {
+			snprintf(msg, sizeof(msg), "%s [%s] (%s): ", context->host_name,
+			    context->host_addr, context->host_geoip );
+		} else {
+			snprintf(msg, sizeof(msg), "%s [%s]: ", context->host_name,
+			    context->host_addr);
+		}
+	} else {
 		msg[0] = 0;
+	}
+
 	vsnprintf(msg + strlen(msg), sizeof(msg) - strlen(msg), fmt, ap);
 	if (debug)
 		printf("syslog: %s\n", msg);
 	else
 		syslog(priority, "%s", msg);
+
 	va_end(ap);
 }
 
